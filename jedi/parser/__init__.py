@@ -119,6 +119,7 @@ class Parser(object):
             'lambdef': pt.Lambda,
             'old_lambdef': pt.Lambda,
             'lambdef_nocond': pt.Lambda,
+            'simple_stmt': pt.SimpleStmt
         }
 
         self.syntax_errors = []

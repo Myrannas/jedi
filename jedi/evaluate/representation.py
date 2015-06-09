@@ -523,7 +523,6 @@ class Function(use_metaclass(CachedMetaClass, Wrapper)):
                 if dec_results:
                     debug.warning('multiple decorators found %s %s',
                                   self.base_func, dec_results)
-
                 # Create param array.
                 if isinstance(f, Function):
                     old_func = f  # TODO this is just hacky. change.
@@ -621,7 +620,7 @@ class FunctionExecution(Executed):
             if check is flow_analysis.UNREACHABLE:
                 debug.dbg('Return unreachable: %s', r)
             else:
-                types += self._evaluator.eval_element(r.children[1])
+                types += self._evaluator.eval_element(r.value())
             if check is flow_analysis.REACHABLE:
                 debug.dbg('Return reachable: %s', r)
                 break
@@ -676,7 +675,16 @@ class FunctionExecution(Executed):
     @common.safe_property
     @memoize_default([])
     def returns(self):
-        return tree.Scope._search_in_scope(self, tree.ReturnStmt)
+        expressions = tree.Scope._search_in_scope(self, tree.SimpleStmt)
+
+        returns = tree.Scope._search_in_scope(self, tree.ReturnStmt)
+
+        for expr in expressions:
+            if expr.deferred_return:
+                returns.append(expr)
+
+
+        return returns
 
     @common.safe_property
     @memoize_default([])

@@ -31,9 +31,9 @@ See also :attr:`Scope.subscopes` and :attr:`Scope.statements`.
 import os
 import re
 from inspect import cleandoc
-from itertools import chain
 import textwrap
 
+from itertools import chain
 from jedi._compatibility import (Python3Method, encoding, is_py3, utf8_repr,
                                  literal_eval, use_metaclass, unicode)
 from jedi import cache
@@ -50,6 +50,7 @@ def is_node(node, *symbol_names):
 
 class PositionModifier(object):
     """A start_pos modifier for the fast parser."""
+
     def __init__(self):
         self.line = 0
 
@@ -111,7 +112,7 @@ class Base(object):
 
     @Python3Method
     def get_parent_until(self, classes=(), reverse=False,
-                         include_current=True):
+            include_current=True):
         """
         Searches the parent "chain" until the object is an instance of
         classes. If classes is empty return the last parent in the chain
@@ -252,6 +253,7 @@ class LeafWithNewLines(Leaf):
     def __repr__(self):
         return "<%s: %r>" % (type(self).__name__, self.value)
 
+
 class Whitespace(LeafWithNewLines):
     """Contains NEWLINE and ENDMARKER tokens."""
     __slots__ = ()
@@ -303,7 +305,7 @@ class Name(Leaf):
         else:
             return stmt.type in ('expr_stmt', 'import_name', 'import_from',
                                  'comp_for', 'with_stmt') \
-                and self in stmt.get_defined_names()
+                   and self in stmt.get_defined_names()
 
     def assignment_indexes(self):
         """
@@ -473,7 +475,7 @@ class BaseNode(Base):
         if not is_py3:
             code = code.encode(encoding, 'replace')
         return "<%s: %s@%s,%s>" % \
-            (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
+               (type(self).__name__, code, self.start_pos[0], self.start_pos[1])
 
 
 class Node(BaseNode):
@@ -715,6 +717,7 @@ def _create_params(parent, argslist_list):
     You could also say that this function replaces the argslist node with a
     list of Param objects.
     """
+
     def check_python2_nested_param(node):
         """
         Python 2 allows params to look like ``def x(a, (b, c))``, which is
@@ -1095,6 +1098,9 @@ class ReturnStmt(KeywordStatement):
     type = 'return_stmt'
     __slots__ = ()
 
+    def value(self):
+        return self.children[1]
+
 
 class YieldExpr(BaseNode):
     type = 'yield_expr'
@@ -1143,6 +1149,23 @@ class ExprStmt(BaseNode, DocstringMixin):
             return self.children[1]
         except IndexError:
             return None
+
+
+class SimpleStmt(BaseNode, DocstringMixin):
+    type = 'simple_stmt'
+    __slots__ = ()
+
+    def value(self):
+        return self.children[0].children[2].children[1]
+
+    @property
+    def deferred_return(self):
+        return hasattr(self.children[0], 'children') and \
+               len(self.children[0].children) > 1 and \
+               hasattr(self.children[0].children[1], 'children') and \
+               len(self.children[0].children[1].children) > 1 and \
+               self.children[0].children[0].value == 'defer' and \
+               self.children[0].children[1].children[1].value == 'returnValue'
 
 
 class Param(BaseNode):
